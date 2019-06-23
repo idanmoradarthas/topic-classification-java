@@ -1,0 +1,15 @@
+version: "3.0"
+services:
+  es:
+    container_name: elaticsearch
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.1.1
+    ports:
+      - 9200:9200
+    environment:
+      - discovery.type=single-node
+  web-app:
+    build: .
+    ports:
+      - 8080:8080
+    depends_on:
+      - es
