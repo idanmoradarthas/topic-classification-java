@@ -6,7 +6,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @SpringBootApplication
 public class TopicClassificationJavaApplication {
 
-    public static void main(String[] args) {
-        SpringApplication.run(TopicClassificationJavaApplication.class, args);
-    }
+  public static void main(String[] args) {
+    SpringApplication.run(TopicClassificationJavaApplication.class, args);
+  }
 }

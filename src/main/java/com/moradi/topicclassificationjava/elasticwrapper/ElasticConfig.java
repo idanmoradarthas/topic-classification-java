@@ -12,14 +12,15 @@ import java.net.UnknownHostException;
 
 @Configuration
 public class ElasticConfig {
-    @Value("${elasticsearch.host}")
-    public String host;
-    @Value("${elasticsearch.port}")
-    public int port;
+  @Value("${elasticsearch.host}")
+  public String host;
 
-    @Bean
-    public RestHighLevelClient client() throws UnknownHostException {
-        return new RestHighLevelClient(
-                RestClient.builder(new HttpHost(InetAddress.getByName(this.host), this.port)));
-    }
+  @Value("${elasticsearch.port}")
+  public int port;
+
+  @Bean
+  public RestHighLevelClient client() throws UnknownHostException {
+    return new RestHighLevelClient(
+        RestClient.builder(new HttpHost(InetAddress.getByName(this.host), this.port)));
+  }
 }
