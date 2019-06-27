@@ -1,5 +1,6 @@
 package com.moradi.topicclassificationjava.elasticwrapper;
 
+import com.moradi.topicclassificationjava.categories.Categories;
 import org.apache.commons.csv.CSVRecord;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
@@ -21,6 +22,7 @@ import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Import;
 import org.springframework.stereotype.Component;
 
@@ -35,16 +37,20 @@ import java.util.stream.Stream;
 @Component
 @Import(ElasticConfig.class)
 public class ElasticHelper {
-  private static final String WEAPONS_LABEL = "weapons";
-  private static final String NUDITY_LABEL = "nudity";
 
   private final RestHighLevelClient client;
   private final Map<String, Double> zeroMatching;
+  private final Map<String, Double> maxMatching;
+
+  @Value("${elasticsearch.index.number_of_replicas}")
+  private int numberOfReplicas;
 
   public ElasticHelper(@Autowired RestHighLevelClient client) {
     this.client = client;
     this.zeroMatching = new HashMap<>();
     this.zeroMatching.put("match_prob", 0.0);
+    this.maxMatching = new HashMap<>();
+    this.maxMatching.put("match_prob", 0.97);
   }
 
   public boolean indexExists(String indexName) throws IOException {
@@ -52,11 +58,9 @@ public class ElasticHelper {
     return this.client.indices().exists(request, RequestOptions.DEFAULT);
   }
 
-  public void createIndex(String indexName, Map<String, Object> fields) throws IOException {
+  public void createIndex(String indexName, Map<String, Object> mapping) throws IOException {
     CreateIndexRequest request = new CreateIndexRequest(indexName);
-    request.settings(Settings.builder().put("index.number_of_replicas", 5));
-    Map<String, Object> mapping = new HashMap<>();
-    mapping.put("properties", fields);
+    request.settings(Settings.builder().put("index.number_of_replicas", numberOfReplicas));
     request.mapping(mapping);
     this.client.indices().create(request, RequestOptions.DEFAULT);
   }
@@ -107,30 +111,30 @@ public class ElasticHelper {
     for (MultiSearchResponse.Item response : responses.getResponses()) {
       if (!response.isFailure()) {
         SearchHit[] hits = response.getResponse().getHits().getHits();
+        double maxScore = Stream.of(hits).mapToDouble(SearchHit::getScore).max().orElse(0.0);
+        double minScore = 0;
+
         Map<String, Map<String, Double>> answer = new HashMap<>();
-        if (Stream.of(hits).allMatch(hit -> hit.getSourceAsMap().get("target").equals("other"))) {
-          answer.put(NUDITY_LABEL, zeroMatching);
-          answer.put(WEAPONS_LABEL, zeroMatching);
-        } else if (Stream.of(hits)
-            .allMatch(hit -> hit.getSourceAsMap().get("target").equals(WEAPONS_LABEL))) {
-          answer.put(NUDITY_LABEL, zeroMatching);
-          Map<String, Double> weaponsResponse = new HashMap<>();
-          weaponsResponse.put("match_prob", 0.97);
-          answer.put(WEAPONS_LABEL, weaponsResponse);
-        } else if (Stream.of(hits)
-            .allMatch(hit -> hit.getSourceAsMap().get("target").equals(NUDITY_LABEL))) {
-          answer.put(WEAPONS_LABEL, zeroMatching);
-          Map<String, Double> nudityResponse = new HashMap<>();
-          nudityResponse.put("match_prob", 0.97);
-          answer.put(NUDITY_LABEL, nudityResponse);
-        } else {
-          classificationProbability classificationProbability = calculateProbability(hits);
-          Map<String, Double> weaponsResponse = new HashMap<>();
-          weaponsResponse.put("match_prob", classificationProbability.getWeaponsProb());
-          answer.put(WEAPONS_LABEL, weaponsResponse);
-          Map<String, Double> nudityResponse = new HashMap<>();
-          nudityResponse.put("match_prob", classificationProbability.getNudityProb());
-          answer.put(NUDITY_LABEL, nudityResponse);
+        for (Categories category : Categories.values()) {
+          if (Stream.of(hits)
+              .allMatch(hit -> hit.getSourceAsMap().get("target").equals(category.getText()))) {
+            answer.put(category.getText(), this.maxMatching);
+          } else {
+            double avgScore =
+                Stream.of(hits)
+                        .filter(
+                            hit -> hit.getSourceAsMap().get("target").equals(category.getText()))
+                        .mapToDouble(SearchHit::getScore)
+                        .sum()
+                    / (double) hits.length;
+            if (avgScore == 0.0) {
+              answer.put(category.getText(), this.zeroMatching);
+            } else {
+              Map<String, Double> matchProb = new HashMap<>();
+              matchProb.put("match_prob", (avgScore - minScore) / (maxScore - minScore));
+              answer.put(category.getText(), matchProb);
+            }
+          }
         }
         responseList.add(answer);
       } else {
@@ -142,27 +146,6 @@ public class ElasticHelper {
     return responseList;
   }
 
-  private classificationProbability calculateProbability(SearchHit[] hits) {
-    double weaponsAvgScore =
-        Stream.of(hits)
-                .filter(hit -> hit.getSourceAsMap().get("target").equals(WEAPONS_LABEL))
-                .mapToDouble(SearchHit::getScore)
-                .sum()
-            / (double) hits.length;
-    double nudityAvgScore =
-        Stream.of(hits)
-                .filter(hit -> hit.getSourceAsMap().get("target").equals(NUDITY_LABEL))
-                .mapToDouble(SearchHit::getScore)
-                .sum()
-            / (double) hits.length;
-
-    double maxScore = Stream.of(hits).mapToDouble(SearchHit::getScore).max().orElse(0.0);
-    double minScore = 0;
-    return new classificationProbability(
-        (weaponsAvgScore - minScore) / (maxScore - minScore),
-        (nudityAvgScore - minScore) / (maxScore - minScore));
-  }
-
   public boolean checkHealth(String indexName) throws IOException {
     try {
       ClusterHealthRequest request = new ClusterHealthRequest(indexName);
@@ -171,23 +154,5 @@ public class ElasticHelper {
       return false;
     }
     return true;
-  }
-
-  private class classificationProbability {
-    private final double weaponsProb;
-    private final double nudityProb;
-
-    classificationProbability(double weaponsProb, double nudityProb) {
-      this.weaponsProb = weaponsProb;
-      this.nudityProb = nudityProb;
-    }
-
-    double getWeaponsProb() {
-      return weaponsProb;
-    }
-
-    double getNudityProb() {
-      return nudityProb;
-    }
   }
 }

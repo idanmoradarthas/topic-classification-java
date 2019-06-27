@@ -7,6 +7,7 @@ import com.moradi.topicclassificationjava.elasticwrapper.ElasticHelper;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
+import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,7 +24,7 @@ import javax.annotation.PostConstruct;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
-import java.util.HashMap;
+import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -33,9 +34,13 @@ import java.util.stream.Collectors;
 public class ApiController {
 
   private static final String DATASET_FILE = "full_set.csv";
+  private static final String DOCUMENT_DEFINITION_FILE = "document_definition.json";
 
   @Value("${elasticsearch.indexName}")
   private String indexName;
+
+  @Value("${elasticsearch.server.millisToSleep}")
+  private int millisToSleep;
 
   private final ElasticHelper elasticHelper;
 
@@ -49,7 +54,7 @@ public class ApiController {
   private void postConstruct() throws IOException, InterruptedException {
     if (!this.elasticHelper.checkHealth(this.indexName)) {
       LOGGER.info("sleep for a minute");
-      Thread.sleep(40000);
+      Thread.sleep(this.millisToSleep);
     }
 
     if (this.elasticHelper.indexExists(this.indexName)) {
@@ -65,15 +70,15 @@ public class ApiController {
     this.elasticHelper.bulkIndexDocuments(this.indexName, records);
   }
 
-  private Map<String, Object> getDocumentDefinition() {
-    Map<String, Object> doc = new HashMap<>();
-    doc.put("type", "text");
-    Map<String, Object> target = new HashMap<>();
-    target.put("type", "keyword");
-    Map<String, Object> documentDefinition = new HashMap<>();
-    documentDefinition.put("doc", doc);
-    documentDefinition.put("target", target);
-    return documentDefinition;
+  private Map<String, Object> getDocumentDefinition() throws IOException {
+    LOGGER.info("Read document definition file");
+    Resource documentDefinitionResource =
+        new ClassPathResource(DOCUMENT_DEFINITION_FILE, ApiController.class.getClassLoader());
+    ObjectMapper mapper = new ObjectMapper();
+    mapper.configure(JsonParser.Feature.ALLOW_BACKSLASH_ESCAPING_ANY_CHARACTER, true);
+    return mapper.readValue(
+        IOUtils.toString(documentDefinitionResource.getInputStream(), Charset.defaultCharset()),
+        new TypeReference<Map<String, Map<String, Map<String, String>>>>() {});
   }
 
   private List<CSVRecord> LoadDataSet() throws IOException {
