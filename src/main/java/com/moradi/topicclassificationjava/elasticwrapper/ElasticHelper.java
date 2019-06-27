@@ -155,19 +155,9 @@ public class ElasticHelper {
                 .mapToDouble(SearchHit::getScore)
                 .sum()
             / (double) hits.length;
-    double otherAvgScore =
-        Stream.of(hits)
-                .filter(hit -> hit.getSourceAsMap().get("target").equals("other"))
-                .mapToDouble(SearchHit::getScore)
-                .sum()
-            / (double) hits.length;
-    double maxScore =
-        Stream.of(weaponsAvgScore, nudityAvgScore, otherAvgScore).max(Double::compareTo).orElse(0.0)
-            + 0.5;
-    double minScore =
-        Stream.of(weaponsAvgScore, nudityAvgScore, otherAvgScore)
-            .min(Double::compareTo)
-            .orElse(0.0);
+
+    double maxScore = Stream.of(hits).mapToDouble(SearchHit::getScore).max().orElse(0.0);
+    double minScore = 0;
     return new classificationProbability(
         (weaponsAvgScore - minScore) / (maxScore - minScore),
         (nudityAvgScore - minScore) / (maxScore - minScore));
