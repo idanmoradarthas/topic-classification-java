@@ -1,0 +1,10 @@
+{
+  "properties": {
+    "doc": {
+      "type": "text"
+    },
+    "target": {
+      "type": "keyword"
+    }
+  }
+}
