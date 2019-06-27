@@ -47,22 +47,22 @@ public class ApiController {
 
   @PostConstruct
   private void postConstruct() throws IOException, InterruptedException {
-    if (!elasticHelper.checkHealth(indexName)) {
+    if (!this.elasticHelper.checkHealth(this.indexName)) {
       LOGGER.info("sleep for a minute");
       Thread.sleep(40000);
     }
 
-    if (elasticHelper.indexExists(indexName)) {
+    if (this.elasticHelper.indexExists(this.indexName)) {
       LOGGER.info("Index pre-exists");
-      elasticHelper.deleteIndex(indexName);
+      this.elasticHelper.deleteIndex(this.indexName);
       LOGGER.info("Index deleted");
     }
-    elasticHelper.createIndex(indexName, getDocumentDefinition());
-    LOGGER.info(String.format("New Index Created: %s", indexName));
+    this.elasticHelper.createIndex(this.indexName, getDocumentDefinition());
+    LOGGER.info(String.format("New Index Created: %s", this.indexName));
 
     List<CSVRecord> records = LoadDataSet();
     LOGGER.info("Index documents");
-    elasticHelper.bulkIndexDocuments(indexName, records);
+    this.elasticHelper.bulkIndexDocuments(this.indexName, records);
   }
 
   private Map<String, Object> getDocumentDefinition() {
@@ -79,7 +79,7 @@ public class ApiController {
   private List<CSVRecord> LoadDataSet() throws IOException {
     LOGGER.info("Read CSV file");
     Resource datasetResource =
-            new ClassPathResource(DATASET_FILE, ApiController.class.getClassLoader());
+        new ClassPathResource(DATASET_FILE, ApiController.class.getClassLoader());
     Reader reader = new InputStreamReader(datasetResource.getInputStream());
     CSVParser csvParser = new CSVParser(reader, CSVFormat.DEFAULT.withHeader());
     List<CSVRecord> records = csvParser.getRecords();
@@ -95,7 +95,7 @@ public class ApiController {
         mapper.readValue(request, new TypeReference<List<Map<String, String>>>() {});
     List<String> documents =
         documentsList.stream().map(docMap -> docMap.get("text")).collect(Collectors.toList());
-    List<Object> response = elasticHelper.moreLikeThisBulk(indexName, documents);
+    List<Object> response = this.elasticHelper.moreLikeThisBulk(this.indexName, documents);
     LOGGER.info(String.format("Response: %s", response));
     return response;
   }
