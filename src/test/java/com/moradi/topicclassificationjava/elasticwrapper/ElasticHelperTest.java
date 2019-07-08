@@ -1,6 +1,8 @@
 package com.moradi.topicclassificationjava.elasticwrapper;
 
+import com.moradi.topicclassificationjava.categories.Categories;
 import org.apache.commons.csv.CSVRecord;
+import org.assertj.core.util.Lists;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.search.MultiSearchResponse;
 import org.elasticsearch.action.search.SearchResponse;
@@ -10,6 +12,7 @@ import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.indices.CreateIndexRequest;
 import org.elasticsearch.client.indices.GetIndexRequest;
+import org.elasticsearch.common.collect.MapBuilder;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.junit.Assert;
@@ -21,7 +24,10 @@ import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
 
 import java.net.ConnectException;
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.IntStream;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -55,7 +61,7 @@ public class ElasticHelperTest {
 
     IndicesClient indicesClient = Mockito.mock(IndicesClient.class);
     Mockito.when(client.indices()).thenReturn(indicesClient);
-    elasticHelper.createIndex(indexName, fields);
+    elasticHelper.createIndex(indexName, fields, fields);
     Mockito.verify(indicesClient, Mockito.times(1))
         .create((CreateIndexRequest) Mockito.any(), Mockito.eq(RequestOptions.DEFAULT));
   }
@@ -104,16 +110,17 @@ public class ElasticHelperTest {
     MultiSearchResponse responses = Mockito.mock(MultiSearchResponse.class);
     MultiSearchResponse.Item item = Mockito.mock(MultiSearchResponse.Item.class);
     Mockito.when(item.isFailure()).thenReturn(true);
-    Mockito.when(item.getFailureMessage()).thenReturn("This is a failure message");
 
     Mockito.when(responses.getResponses()).thenReturn(new MultiSearchResponse.Item[] {item});
     Mockito.when(client.msearch(Mockito.any(), Mockito.eq(RequestOptions.DEFAULT)))
         .thenReturn(responses);
 
-    List<Object> expected = new LinkedList<>();
-    Map<String, String> failedMap = new HashMap<>();
-    failedMap.put("Failed to evaluate", item.getFailureMessage());
-    expected.add(failedMap);
+    List<Map<Categories, Double>> expected =
+            Lists.list(
+                    MapBuilder.<Categories, Double>newMapBuilder()
+                            .put(Categories.WEAPONS, 0.0)
+                            .put(Categories.NUDITY, 0.0)
+                            .map());
 
     Assert.assertEquals(expected, elasticHelper.moreLikeThisBulk(indexName, documents));
   }
@@ -149,13 +156,12 @@ public class ElasticHelperTest {
     Mockito.when(client.msearch(Mockito.any(), Mockito.eq(RequestOptions.DEFAULT)))
         .thenReturn(responses);
 
-    List<Object> expected = new LinkedList<>();
-    Map<String, Map<String, Double>> answer = new HashMap<>();
-    Map<String, Double> zeroMatching = new HashMap<>();
-    zeroMatching.put("match_prob", 0.0);
-    answer.put("nudity", zeroMatching);
-    answer.put("weapons", zeroMatching);
-    expected.add(answer);
+    List<Map<Categories, Double>> expected =
+            Lists.list(
+                    MapBuilder.<Categories, Double>newMapBuilder()
+                            .put(Categories.WEAPONS, 0.0)
+                            .put(Categories.NUDITY, 0.0)
+                            .map());
 
     Assert.assertEquals(expected, elasticHelper.moreLikeThisBulk(indexName, documents));
   }
@@ -191,15 +197,12 @@ public class ElasticHelperTest {
     Mockito.when(client.msearch(Mockito.any(), Mockito.eq(RequestOptions.DEFAULT)))
         .thenReturn(responses);
 
-    List<Object> expected = new LinkedList<>();
-    Map<String, Map<String, Double>> answer = new HashMap<>();
-    Map<String, Double> zeroMatching = new HashMap<>();
-    zeroMatching.put("match_prob", 0.0);
-    answer.put("nudity", zeroMatching);
-    Map<String, Double> weaponsResponse = new HashMap<>();
-    weaponsResponse.put("match_prob", 0.97);
-    answer.put("weapons", weaponsResponse);
-    expected.add(answer);
+    List<Map<Categories, Double>> expected =
+        Lists.list(
+            MapBuilder.<Categories, Double>newMapBuilder()
+                .put(Categories.WEAPONS, 0.97)
+                .put(Categories.NUDITY, 0.0)
+                .map());
 
     Assert.assertEquals(expected, elasticHelper.moreLikeThisBulk(indexName, documents));
   }
@@ -235,21 +238,18 @@ public class ElasticHelperTest {
     Mockito.when(client.msearch(Mockito.any(), Mockito.eq(RequestOptions.DEFAULT)))
         .thenReturn(responses);
 
-    List<Object> expected = new LinkedList<>();
-    Map<String, Map<String, Double>> answer = new HashMap<>();
-    Map<String, Double> zeroMatching = new HashMap<>();
-    zeroMatching.put("match_prob", 0.0);
-    Map<String, Double> nudityResponse = new HashMap<>();
-    nudityResponse.put("match_prob", 0.97);
-    answer.put("nudity", nudityResponse);
-    answer.put("weapons", zeroMatching);
-    expected.add(answer);
+    List<Map<Categories, Double>> expected =
+            Lists.list(
+                    MapBuilder.<Categories, Double>newMapBuilder()
+                            .put(Categories.WEAPONS, 0.0)
+                            .put(Categories.NUDITY, 0.97)
+                            .map());
 
     Assert.assertEquals(expected, elasticHelper.moreLikeThisBulk(indexName, documents));
   }
 
   @Test
-  public void moreLikeThisBulk() throws Exception{
+  public void moreLikeThisBulk() throws Exception {
     String indexName = "demo";
     String document = "small document";
     List<String> documents = Collections.singletonList(document);
@@ -278,23 +278,19 @@ public class ElasticHelperTest {
 
     Mockito.when(searchHits.getHits()).thenReturn(hits);
     Mockito.when(client.msearch(Mockito.any(), Mockito.eq(RequestOptions.DEFAULT)))
-            .thenReturn(responses);
+        .thenReturn(responses);
 
-    List<Object> expected = new LinkedList<>();
-    Map<String, Map<String, Double>> answer = new HashMap<>();
-    Map<String, Double> zeroMatching = new HashMap<>();
-    zeroMatching.put("match_prob", 0.0);
-    answer.put("nudity", zeroMatching);
-    Map<String, Double> weaponsResponse = new HashMap<>();
-    weaponsResponse.put("match_prob", 0.8406778751597274);
-    answer.put("weapons", weaponsResponse);
-    expected.add(answer);
+    List<Map<Categories, Double>> expected =
+            Lists.list(
+                    MapBuilder.<Categories, Double>newMapBuilder()
+                            .put(Categories.WEAPONS, 0.8406778751597274)
+                            .put(Categories.NUDITY, 0.0)
+                            .map());
 
     Assert.assertEquals(expected, elasticHelper.moreLikeThisBulk(indexName, documents));
   }
 
-  private SearchHit mockSearchHit(String target, float score)
-  {
+  private SearchHit mockSearchHit(String target, float score) {
     SearchHit hit = Mockito.mock(SearchHit.class);
     Map<String, Object> sourceAsMap = new HashMap<>();
     sourceAsMap.put("target", target);
