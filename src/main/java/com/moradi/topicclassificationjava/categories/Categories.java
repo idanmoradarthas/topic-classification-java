@@ -2,7 +2,9 @@ package com.moradi.topicclassificationjava.categories;
 
 public enum Categories {
   WEAPONS("weapons"),
-  NUDITY("nudity");
+  NUDITY("nudity"),
+  DRUGS("drugs"),
+  CYBER("cyber-security");
 
   private String text;
 
