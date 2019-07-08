@@ -14,7 +14,6 @@ import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.indices.CreateIndexRequest;
 import org.elasticsearch.client.indices.GetIndexRequest;
-import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.json.JsonXContent;
 import org.elasticsearch.index.query.MoreLikeThisQueryBuilder.Item;
@@ -22,7 +21,6 @@ import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Import;
 import org.springframework.stereotype.Component;
 
@@ -32,6 +30,8 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Component
@@ -39,18 +39,11 @@ import java.util.stream.Stream;
 public class ElasticHelper {
 
   private final RestHighLevelClient client;
-  private final Map<String, Double> zeroMatching;
-  private final Map<String, Double> maxMatching;
-
-  @Value("${elasticsearch.index.number_of_replicas}")
-  private int numberOfReplicas;
+  private static final double ZERO_MATCHING = 0;
+  private static final double MAX_MATCHING = 0.97;
 
   public ElasticHelper(@Autowired RestHighLevelClient client) {
     this.client = client;
-    this.zeroMatching = new HashMap<>();
-    this.zeroMatching.put("match_prob", 0.0);
-    this.maxMatching = new HashMap<>();
-    this.maxMatching.put("match_prob", 0.97);
   }
 
   public boolean indexExists(String indexName) throws IOException {
@@ -58,9 +51,11 @@ public class ElasticHelper {
     return this.client.indices().exists(request, RequestOptions.DEFAULT);
   }
 
-  public void createIndex(String indexName, Map<String, Object> mapping) throws IOException {
+  public void createIndex(
+      String indexName, Map<String, Object> mapping, Map<String, Object> settings)
+      throws IOException {
     CreateIndexRequest request = new CreateIndexRequest(indexName);
-    request.settings(Settings.builder().put("index.number_of_replicas", numberOfReplicas));
+    request.settings(settings);
     request.mapping(mapping);
     this.client.indices().create(request, RequestOptions.DEFAULT);
   }
@@ -81,7 +76,7 @@ public class ElasticHelper {
     }
   }
 
-  public List<Object> moreLikeThisBulk(String indexName, List<String> documents)
+  public List<Map<Categories, Double>> moreLikeThisBulk(String indexName, List<String> documents)
       throws IOException {
     XContentBuilder builder = JsonXContent.contentBuilder();
     builder.startObject();
@@ -106,52 +101,56 @@ public class ElasticHelper {
     return parseMultiSearchResponse(responses);
   }
 
-  private List<Object> parseMultiSearchResponse(MultiSearchResponse responses) {
-    List<Object> responseList = new LinkedList<>();
+  private List<Map<Categories, Double>> parseMultiSearchResponse(MultiSearchResponse responses) {
+    List<Map<Categories, Double>> responseList = new LinkedList<>();
     for (MultiSearchResponse.Item response : responses.getResponses()) {
       if (!response.isFailure()) {
         SearchHit[] hits = response.getResponse().getHits().getHits();
         double maxScore = Stream.of(hits).mapToDouble(SearchHit::getScore).max().orElse(0.0);
         double minScore = 0;
 
-        Map<String, Map<String, Double>> answer = new HashMap<>();
+        Map<Categories, Double> answer = new HashMap<>();
         for (Categories category : Categories.values()) {
-          if (Stream.of(hits)
-              .allMatch(hit -> hit.getSourceAsMap().get("target").equals(category.getText()))) {
-            answer.put(category.getText(), this.maxMatching);
+          if (hits.length > 0
+              && Stream.of(hits)
+                  .allMatch(hit -> hit.getSourceAsMap().get("target").equals(category.getText()))) {
+            answer.put(category, MAX_MATCHING);
           } else {
-            double avgScore =
-                Stream.of(hits)
-                        .filter(
-                            hit -> hit.getSourceAsMap().get("target").equals(category.getText()))
-                        .mapToDouble(SearchHit::getScore)
-                        .sum()
-                    / (double) hits.length;
+            double avgScore = 0.0;
+            if (hits.length > 0) {
+              avgScore =
+                  Stream.of(hits)
+                          .filter(
+                              hit -> hit.getSourceAsMap().get("target").equals(category.getText()))
+                          .mapToDouble(SearchHit::getScore)
+                          .sum()
+                      / (double) hits.length;
+            }
             if (avgScore == 0.0) {
-              answer.put(category.getText(), this.zeroMatching);
+              answer.put(category, ZERO_MATCHING);
             } else {
-              Map<String, Double> matchProb = new HashMap<>();
-              matchProb.put("match_prob", (avgScore - minScore) / (maxScore - minScore));
-              answer.put(category.getText(), matchProb);
+              answer.put(category, (avgScore - minScore) / (maxScore - minScore));
             }
           }
         }
         responseList.add(answer);
       } else {
-        Map<String, String> failedMap = new HashMap<>();
-        failedMap.put("Failed to evaluate", response.getFailureMessage());
-        responseList.add(failedMap);
+        responseList.add(
+            Stream.of(Categories.values())
+                .collect(Collectors.toMap(Function.identity(), val -> 0.0)));
       }
     }
     return responseList;
   }
 
-  public boolean checkHealth(String indexName) throws IOException {
+  public boolean checkHealth(String indexName) {
     try {
       ClusterHealthRequest request = new ClusterHealthRequest(indexName);
       client.cluster().health(request, RequestOptions.DEFAULT);
     } catch (ConnectException ignored) {
       return false;
+    } catch (IOException ignored) {
+      return true;
     }
     return true;
   }

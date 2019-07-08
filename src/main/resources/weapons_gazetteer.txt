@@ -1,0 +1,74 @@
+armaments
+assault rifle
+autocannon
+ammo
+arms
+automatic rifle
+ammunition
+arrow
+axe
+ballista
+baton
+bazooka
+blackjack
+blowgun
+bomb
+bow and arrow
+bullet
+bullets
+ballistic missile
+billy club
+blade
+blowpipe
+boobytrap
+knife
+bayonet
+weapon
+weapons
+blaster
+bludgeon
+boomerang
+brass knuckles
+cannon
+catapult
+crossbow
+carbine
+cleaver
+cudgel
+cutlass
+dagger
+shooting range
+explosives
+firearm
+flamethrower
+gun
+guns
+missile
+grenade
+gunpowder
+hatchet
+handgun
+katana
+longsword
+sword
+longbow
+mace
+magnum
+machete
+musket
+mustard gas
+nerve gas
+nuclear bomb
+pistol
+pickaxe
+rocket
+revolver
+rifle
+shooter
+slingshot
+shotgun
+tank
+tear gas
+torpedo
+uzi
+weaponry

@@ -3,11 +3,14 @@ package com.moradi.topicclassificationjava;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.moradi.topicclassificationjava.categories.Categories;
 import com.moradi.topicclassificationjava.elasticwrapper.ElasticHelper;
+import com.moradi.topicclassificationjava.nlp.GazetteerClassifier;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
 import org.apache.commons.io.IOUtils;
+import org.elasticsearch.common.collect.MapBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,7 +30,10 @@ import java.io.Reader;
 import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BinaryOperator;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 @RestController
 @Import(ElasticHelper.class)
@@ -35,6 +41,7 @@ public class ApiController {
 
   private static final String DATASET_FILE = "full_set.csv";
   private static final String DOCUMENT_DEFINITION_FILE = "document_definition.json";
+  private static final String SETTINGS_DEFINITION_FILE = "settings_definition.json";
 
   @Value("${elasticsearch.indexName}")
   private String indexName;
@@ -43,9 +50,12 @@ public class ApiController {
   private int millisToSleep;
 
   private final ElasticHelper elasticHelper;
+  private final GazetteerClassifier gazetteerClassifier;
 
-  public ApiController(@Autowired ElasticHelper elasticHelper) {
+  @Autowired
+  public ApiController(ElasticHelper elasticHelper, GazetteerClassifier gazetteerClassifier) {
     this.elasticHelper = elasticHelper;
+    this.gazetteerClassifier = gazetteerClassifier;
   }
 
   private static Logger LOGGER = LoggerFactory.getLogger(ApiController.class);
@@ -62,7 +72,8 @@ public class ApiController {
       this.elasticHelper.deleteIndex(this.indexName);
       LOGGER.info("Index deleted");
     }
-    this.elasticHelper.createIndex(this.indexName, getDocumentDefinition());
+    this.elasticHelper.createIndex(
+        this.indexName, getDocumentDefinition(), getSettingsDefinition());
     LOGGER.info(String.format("New Index Created: %s", this.indexName));
 
     List<CSVRecord> records = LoadDataSet();
@@ -72,13 +83,22 @@ public class ApiController {
 
   private Map<String, Object> getDocumentDefinition() throws IOException {
     LOGGER.info("Read document definition file");
+    return readResource(DOCUMENT_DEFINITION_FILE);
+  }
+
+  private Map<String, Object> getSettingsDefinition() throws IOException {
+    LOGGER.info("Read settings definition file");
+    return readResource(SETTINGS_DEFINITION_FILE);
+  }
+
+  private Map<String, Object> readResource(String fileName) throws IOException {
     Resource documentDefinitionResource =
-        new ClassPathResource(DOCUMENT_DEFINITION_FILE, ApiController.class.getClassLoader());
+        new ClassPathResource(fileName, ApiController.class.getClassLoader());
     ObjectMapper mapper = new ObjectMapper();
     mapper.configure(JsonParser.Feature.ALLOW_BACKSLASH_ESCAPING_ANY_CHARACTER, true);
     return mapper.readValue(
         IOUtils.toString(documentDefinitionResource.getInputStream(), Charset.defaultCharset()),
-        new TypeReference<Map<String, Map<String, Map<String, String>>>>() {});
+        new TypeReference<Map<String, Object>>() {});
   }
 
   private List<CSVRecord> LoadDataSet() throws IOException {
@@ -93,15 +113,65 @@ public class ApiController {
   }
 
   @PostMapping(value = "/classify/v1.0", produces = MediaType.APPLICATION_JSON_VALUE)
-  public List<Object> getClassification(@RequestBody String request) throws IOException {
+  public List<Map<String, Map<String, Double>>> getClassification(@RequestBody String request)
+      throws IOException {
     ObjectMapper mapper = new ObjectMapper();
     mapper.configure(JsonParser.Feature.ALLOW_BACKSLASH_ESCAPING_ANY_CHARACTER, true);
     List<Map<String, String>> documentsList =
         mapper.readValue(request, new TypeReference<List<Map<String, String>>>() {});
     List<String> documents =
         documentsList.stream().map(docMap -> docMap.get("text")).collect(Collectors.toList());
-    List<Object> response = this.elasticHelper.moreLikeThisBulk(this.indexName, documents);
+    List<Map<Categories, Double>> elasticResponses =
+        this.elasticHelper.moreLikeThisBulk(this.indexName, documents);
+    List<Map<Categories, Double>> gazetteerResponses =
+        this.gazetteerClassifier.classifyByGazetteers(documents);
+    List<Map<String, Map<String, Double>>> response =
+        calcResponse(documents, elasticResponses, gazetteerResponses);
     LOGGER.info(String.format("Response: %s", response));
     return response;
+  }
+
+  private List<Map<String, Map<String, Double>>> calcResponse(
+      List<String> documents,
+      List<Map<Categories, Double>> elasticResponses,
+      List<Map<Categories, Double>> gazetteerResponses) {
+    return IntStream.range(0, documents.size())
+        .boxed()
+        .map(
+            i -> {
+              Map<Categories, Double> elasticResponse = elasticResponses.get(i);
+              Map<Categories, Double> gazetteerResponse = gazetteerResponses.get(i);
+              return Stream.of(elasticResponse, gazetteerResponse)
+                  .flatMap(map -> map.entrySet().stream())
+                  .collect(
+                      Collectors.toMap(
+                          Map.Entry::getKey, Map.Entry::getValue, probabilityCombiner()));
+            })
+        .map(
+            map -> {
+              MapBuilder<String, Map<String, Double>> builder = MapBuilder.newMapBuilder();
+              map.forEach(
+                  (key, value) ->
+                      builder.put(
+                          key.getText(),
+                          MapBuilder.<String, Double>newMapBuilder()
+                              .put("match_prob", value)
+                              .map()));
+              return builder.map();
+            })
+        .collect(Collectors.toList());
+  }
+
+  private BinaryOperator<Double> probabilityCombiner() {
+    return (v1, v2) -> {
+      if ((v1 > 0) && (v2 > 0)) {
+        return 0.7 * v1 + 0.3 * v2;
+      } else if (v1 > 0) {
+        return v1;
+      } else if (v2 > 0) {
+        return v2;
+      }
+      return 0.0;
+    };
   }
 }

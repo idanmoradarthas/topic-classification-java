@@ -1,0 +1,11 @@
+{
+  "number_of_replicas": 5,
+  "analysis": {
+    "analyzer": {
+      "my_english_analyzer": {
+        "type": "standard",
+        "stopwords": "_english_"
+      }
+    }
+  }
+}

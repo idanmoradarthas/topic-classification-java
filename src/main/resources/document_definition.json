@@ -1,7 +1,9 @@
 {
   "properties": {
     "doc": {
-      "type": "text"
+      "type": "text",
+      "analyzer": "my_english_analyzer",
+      "search_analyzer": "my_english_analyzer"
     },
     "target": {
       "type": "keyword"
