@@ -120,6 +120,8 @@ public class ElasticHelperTest {
             MapBuilder.<Categories, Double>newMapBuilder()
                 .put(Categories.WEAPONS, 0.0)
                 .put(Categories.NUDITY, 0.0)
+                .put(Categories.CYBER, 0.0)
+                .put(Categories.DRUGS, 0.0)
                 .map());
 
     Assert.assertEquals(expected, elasticHelper.moreLikeThisBulk(indexName, documents));
@@ -161,6 +163,8 @@ public class ElasticHelperTest {
             MapBuilder.<Categories, Double>newMapBuilder()
                 .put(Categories.WEAPONS, 0.0)
                 .put(Categories.NUDITY, 0.0)
+                .put(Categories.CYBER, 0.0)
+                .put(Categories.DRUGS, 0.0)
                 .map());
 
     Assert.assertEquals(expected, elasticHelper.moreLikeThisBulk(indexName, documents));
@@ -202,6 +206,8 @@ public class ElasticHelperTest {
             MapBuilder.<Categories, Double>newMapBuilder()
                 .put(Categories.WEAPONS, 0.97)
                 .put(Categories.NUDITY, 0.0)
+                .put(Categories.CYBER, 0.0)
+                .put(Categories.DRUGS, 0.0)
                 .map());
 
     Assert.assertEquals(expected, elasticHelper.moreLikeThisBulk(indexName, documents));
@@ -243,6 +249,8 @@ public class ElasticHelperTest {
             MapBuilder.<Categories, Double>newMapBuilder()
                 .put(Categories.WEAPONS, 0.0)
                 .put(Categories.NUDITY, 0.97)
+                .put(Categories.CYBER, 0.0)
+                .put(Categories.DRUGS, 0.0)
                 .map());
 
     Assert.assertEquals(expected, elasticHelper.moreLikeThisBulk(indexName, documents));
@@ -285,6 +293,8 @@ public class ElasticHelperTest {
             MapBuilder.<Categories, Double>newMapBuilder()
                 .put(Categories.WEAPONS, 0.8406778751597274)
                 .put(Categories.NUDITY, 0.0)
+                .put(Categories.CYBER, 0.0)
+                .put(Categories.DRUGS, 0.0)
                 .map());
 
     Assert.assertEquals(expected, elasticHelper.moreLikeThisBulk(indexName, documents));
