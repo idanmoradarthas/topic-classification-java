@@ -116,11 +116,11 @@ public class ElasticHelperTest {
         .thenReturn(responses);
 
     List<Map<Categories, Double>> expected =
-            Lists.list(
-                    MapBuilder.<Categories, Double>newMapBuilder()
-                            .put(Categories.WEAPONS, 0.0)
-                            .put(Categories.NUDITY, 0.0)
-                            .map());
+        Lists.list(
+            MapBuilder.<Categories, Double>newMapBuilder()
+                .put(Categories.WEAPONS, 0.0)
+                .put(Categories.NUDITY, 0.0)
+                .map());
 
     Assert.assertEquals(expected, elasticHelper.moreLikeThisBulk(indexName, documents));
   }
@@ -157,11 +157,11 @@ public class ElasticHelperTest {
         .thenReturn(responses);
 
     List<Map<Categories, Double>> expected =
-            Lists.list(
-                    MapBuilder.<Categories, Double>newMapBuilder()
-                            .put(Categories.WEAPONS, 0.0)
-                            .put(Categories.NUDITY, 0.0)
-                            .map());
+        Lists.list(
+            MapBuilder.<Categories, Double>newMapBuilder()
+                .put(Categories.WEAPONS, 0.0)
+                .put(Categories.NUDITY, 0.0)
+                .map());
 
     Assert.assertEquals(expected, elasticHelper.moreLikeThisBulk(indexName, documents));
   }
@@ -239,11 +239,11 @@ public class ElasticHelperTest {
         .thenReturn(responses);
 
     List<Map<Categories, Double>> expected =
-            Lists.list(
-                    MapBuilder.<Categories, Double>newMapBuilder()
-                            .put(Categories.WEAPONS, 0.0)
-                            .put(Categories.NUDITY, 0.97)
-                            .map());
+        Lists.list(
+            MapBuilder.<Categories, Double>newMapBuilder()
+                .put(Categories.WEAPONS, 0.0)
+                .put(Categories.NUDITY, 0.97)
+                .map());
 
     Assert.assertEquals(expected, elasticHelper.moreLikeThisBulk(indexName, documents));
   }
@@ -281,11 +281,11 @@ public class ElasticHelperTest {
         .thenReturn(responses);
 
     List<Map<Categories, Double>> expected =
-            Lists.list(
-                    MapBuilder.<Categories, Double>newMapBuilder()
-                            .put(Categories.WEAPONS, 0.8406778751597274)
-                            .put(Categories.NUDITY, 0.0)
-                            .map());
+        Lists.list(
+            MapBuilder.<Categories, Double>newMapBuilder()
+                .put(Categories.WEAPONS, 0.8406778751597274)
+                .put(Categories.NUDITY, 0.0)
+                .map());
 
     Assert.assertEquals(expected, elasticHelper.moreLikeThisBulk(indexName, documents));
   }
