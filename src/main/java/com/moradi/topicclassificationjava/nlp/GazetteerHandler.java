@@ -42,9 +42,15 @@ public class GazetteerHandler {
               Matcher matcher = this.pattern.matcher(document);
               long matchesSum =
                   Stream.iterate(0, i -> i + 1).filter(i -> !matcher.find()).findFirst().get();
-              return (count > 0)
-                  ? Math.max(0, Math.min(0.97, matchesSum * matchesSum / count))
-                  : 0.0;
+              if ((matchesSum > 0) && (count > 0)) {
+                double score = matchesSum * matchesSum / count;
+                if (score < 0.2) {
+                  score = score * 0.01 + 0.2;
+                }
+                return Math.max(0.2, Math.min(0.97, score));
+              } else {
+                return 0.0;
+              }
             })
         .collect(Collectors.toList());
   }

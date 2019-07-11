@@ -40,8 +40,10 @@ import java.util.stream.Stream;
 public class ApiController {
 
   private static final String DATASET_FILE = "full_set.csv";
-  private static final String DOCUMENT_DEFINITION_FILE = "document_definition.json";
-  private static final String SETTINGS_DEFINITION_FILE = "settings_definition.json";
+  private static final String DOCUMENT_DEFINITION_FILE =
+      "elasticsearch configuration files/document_definition.json";
+  private static final String SETTINGS_DEFINITION_FILE =
+      "elasticsearch configuration files/settings_definition.json";
 
   @Value("${elasticsearch.indexName}")
   private String indexName;

@@ -14,10 +14,10 @@ import java.util.Map;
 
 @Configuration
 public class GazetteerHandlerConfig {
-  private static final String WEAPONS_GAZETTEER_FILE = "weapons_gazetteer.txt";
-  private static final String NUDITY_GAZETTEER_FILE = "nudity_gazetteer.txt";
-  private static final String CYBER_GAZETTEER_FILE = "cyber_gazetteer.txt";
-  private static final String DRUGS_GAZETTEER_FILE = "drugs_gazetteer.txt";
+  private static final String WEAPONS_GAZETTEER_FILE = "gazetteers/weapons_gazetteer.txt";
+  private static final String NUDITY_GAZETTEER_FILE = "gazetteers/nudity_gazetteer.txt";
+  private static final String CYBER_GAZETTEER_FILE = "gazetteers/cyber_gazetteer.txt";
+  private static final String DRUGS_GAZETTEER_FILE = "gazetteers/drugs_gazetteer.txt";
 
   private GazetteerHandler weaponsGazetteer() throws Exception {
     Resource weaponGazetteerResource =
