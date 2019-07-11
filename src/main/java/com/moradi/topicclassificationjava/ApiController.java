@@ -44,6 +44,10 @@ public class ApiController {
       "elasticsearch configuration files/document_definition.json";
   private static final String SETTINGS_DEFINITION_FILE =
       "elasticsearch configuration files/settings_definition.json";
+  private static final String COUNTRIES_NAMES_FILE =
+      "elasticsearch configuration files/counties_names.txt";
+  private static final String FORTUNE_500_FILE =
+      "elasticsearch configuration files/Fortune 500.txt";
 
   @Value("${elasticsearch.indexName}")
   private String indexName;
@@ -85,22 +89,38 @@ public class ApiController {
 
   private Map<String, Object> getDocumentDefinition() throws IOException {
     LOGGER.info("Read document definition file");
-    return readResource(DOCUMENT_DEFINITION_FILE);
-  }
-
-  private Map<String, Object> getSettingsDefinition() throws IOException {
-    LOGGER.info("Read settings definition file");
-    return readResource(SETTINGS_DEFINITION_FILE);
-  }
-
-  private Map<String, Object> readResource(String fileName) throws IOException {
     Resource documentDefinitionResource =
-        new ClassPathResource(fileName, ApiController.class.getClassLoader());
+        new ClassPathResource(DOCUMENT_DEFINITION_FILE, ApiController.class.getClassLoader());
     ObjectMapper mapper = new ObjectMapper();
     mapper.configure(JsonParser.Feature.ALLOW_BACKSLASH_ESCAPING_ANY_CHARACTER, true);
     return mapper.readValue(
         IOUtils.toString(documentDefinitionResource.getInputStream(), Charset.defaultCharset()),
         new TypeReference<Map<String, Object>>() {});
+  }
+
+  private Map<String, Object> getSettingsDefinition() throws IOException {
+    LOGGER.info("Read settings definition file");
+    Resource settingsDefinitionResource =
+        new ClassPathResource(SETTINGS_DEFINITION_FILE, ApiController.class.getClassLoader());
+    Resource countiesNamesResource =
+        new ClassPathResource(COUNTRIES_NAMES_FILE, ApiController.class.getClassLoader());
+    Resource fortuneResource =
+        new ClassPathResource(FORTUNE_500_FILE, ApiController.class.getClassLoader());
+    String settings =
+        IOUtils.toString(settingsDefinitionResource.getInputStream(), Charset.defaultCharset());
+    List<String> countiesNames =
+        IOUtils.readLines(countiesNamesResource.getInputStream(), Charset.defaultCharset());
+    List<String> fortune =
+        IOUtils.readLines(fortuneResource.getInputStream(), Charset.defaultCharset());
+    ObjectMapper mapper = new ObjectMapper();
+    mapper.configure(JsonParser.Feature.ALLOW_BACKSLASH_ESCAPING_ANY_CHARACTER, true);
+    Map<String, Object> settingsMap =
+        mapper.readValue(settings, new TypeReference<Map<String, Object>>() {});
+    Map<String, Map<String, Map<String, Object>>> analysis =
+        (Map<String, Map<String, Map<String, Object>>>) settingsMap.get("analysis");
+    analysis.get("filter").get("countries_names").put("stopwords", countiesNames);
+    analysis.get("filter").get("fortune_500").put("stopwords", fortune);
+    return settingsMap;
   }
 
   private List<CSVRecord> LoadDataSet() throws IOException {
