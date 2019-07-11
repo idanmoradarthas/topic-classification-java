@@ -3,8 +3,28 @@
   "analysis": {
     "analyzer": {
       "my_english_analyzer": {
-        "type": "standard",
+        "tokenizer": "standard",
+        "filter": [
+          "english_stop",
+          "countries_names",
+          "fortune_500"
+        ]
+      }
+    },
+    "filter": {
+      "english_stop": {
+        "type": "stop",
         "stopwords": "_english_"
+      },
+      "countries_names": {
+        "type": "stop",
+        "ignore_case": "true",
+        "stopwords": []
+      },
+      "fortune_500": {
+        "type": "stop",
+        "ignore_case": "true",
+        "stopwords": []
       }
     }
   }
