@@ -52,109 +52,137 @@ for example:
 Response will an array in same size as the documents with matching probability for weapon mentioning in the doc:
 ```json
 [
-  {
-        "nudity": {
-          "match_prob": prob
+    [
+        {
+            "match_prob": prob,
+            "topic": "weapons"
         },
-        "drugs": {
-          "match_prob": prob
+        {
+            "match_prob": prob,
+            "topic": "nudity"
         },
-        "cyber-security": {
-          "match_prob": prob
+        {
+            "match_prob": prob,
+            "topic": "drugs"
         },
-        "weapons": {
-          "match_prob": prob
+        {
+            "match_prob": prob,
+            "topic": "cyber-security"
         }
-  },
-  ...
+    ],
+    ...
 ]
 ```
 for example:
 ```json
 [
-   {
-      "nudity":{
-         "match_prob":0.0
-      },
-      "drugs":{
-         "match_prob":0.0
-      },
-      "cyber-security":{
-         "match_prob":0.0
-      },
-      "weapons":{
-         "match_prob":0.3076923076923077
-      }
-   },
-   {
-      "nudity":{
-         "match_prob":0.0
-      },
-      "drugs":{
-         "match_prob":0.0
-      },
-      "cyber-security":{
-         "match_prob":0.0
-      },
-      "weapons":{
-         "match_prob":0.97
-      }
-   },
-   {
-      "nudity":{
-         "match_prob":0.0
-      },
-      "drugs":{
-         "match_prob":0.0
-      },
-      "cyber-security":{
-         "match_prob":0.0
-      },
-      "weapons":{
-         "match_prob":0.0
-      }
-   },
-   {
-      "nudity":{
-         "match_prob":0.0
-      },
-      "drugs":{
-         "match_prob":0.0
-      },
-      "cyber-security":{
-         "match_prob":0.0
-      },
-      "weapons":{
-         "match_prob":0.0
-      }
-   },
-   {
-      "nudity":{
-         "match_prob":0.0
-      },
-      "drugs":{
-         "match_prob":0.0
-      },
-      "cyber-security":{
-         "match_prob":0.0
-      },
-      "weapons":{
-         "match_prob":0.0
-      }
-   },
-   {
-      "nudity":{
-         "match_prob":0.08565079067757202
-      },
-      "drugs":{
-         "match_prob":0.0
-      },
-      "cyber-security":{
-         "match_prob":0.0
-      },
-      "weapons":{
-         "match_prob":0.0
-      }
-   }
+    [
+        {
+            "match_prob": 0.3076923076923077,
+            "topic": "weapons"
+        },
+        {
+            "match_prob": 0.0,
+            "topic": "cyber-security"
+        },
+        {
+            "match_prob": 0.0,
+            "topic": "nudity"
+        },
+        {
+            "match_prob": 0.0,
+            "topic": "drugs"
+        }
+    ],
+    [
+        {
+            "match_prob": 0.8770673948556753,
+            "topic": "weapons"
+        },
+        {
+            "match_prob": 0.0,
+            "topic": "cyber-security"
+        },
+        {
+            "match_prob": 0.0,
+            "topic": "nudity"
+        },
+        {
+            "match_prob": 0.0,
+            "topic": "drugs"
+        }
+    ],
+    [
+        {
+            "match_prob": 0.0,
+            "topic": "weapons"
+        },
+        {
+            "match_prob": 0.0,
+            "topic": "cyber-security"
+        },
+        {
+            "match_prob": 0.0,
+            "topic": "nudity"
+        },
+        {
+            "match_prob": 0.0,
+            "topic": "drugs"
+        }
+    ],
+    [
+        {
+            "match_prob": 0.0,
+            "topic": "weapons"
+        },
+        {
+            "match_prob": 0.0,
+            "topic": "cyber-security"
+        },
+        {
+            "match_prob": 0.0,
+            "topic": "nudity"
+        },
+        {
+            "match_prob": 0.0,
+            "topic": "drugs"
+        }
+    ],
+    [
+        {
+            "match_prob": 0.0,
+            "topic": "weapons"
+        },
+        {
+            "match_prob": 0.20006369426751594,
+            "topic": "cyber-security"
+        },
+        {
+            "match_prob": 0.0,
+            "topic": "nudity"
+        },
+        {
+            "match_prob": 0.0,
+            "topic": "drugs"
+        }
+    ],
+    [
+        {
+            "match_prob": 0.1581401355331221,
+            "topic": "weapons"
+        },
+        {
+            "match_prob": 0.20007246376811597,
+            "topic": "cyber-security"
+        },
+        {
+            "match_prob": 0.08188766122555868,
+            "topic": "nudity"
+        },
+        {
+            "match_prob": 0.0,
+            "topic": "drugs"
+        }
+    ]
 ]
 ```
