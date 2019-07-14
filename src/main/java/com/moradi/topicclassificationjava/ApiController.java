@@ -10,7 +10,6 @@ import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
 import org.apache.commons.io.IOUtils;
-import org.elasticsearch.common.collect.MapBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,6 +27,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.Charset;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BinaryOperator;
@@ -135,7 +135,7 @@ public class ApiController {
   }
 
   @PostMapping(value = "/classify/v1.0", produces = MediaType.APPLICATION_JSON_VALUE)
-  public List<Map<String, Map<String, Double>>> getClassification(@RequestBody String request)
+  public List<List<Map<String, Object>>> getClassification(@RequestBody String request)
       throws IOException {
     ObjectMapper mapper = new ObjectMapper();
     mapper.configure(JsonParser.Feature.ALLOW_BACKSLASH_ESCAPING_ANY_CHARACTER, true);
@@ -147,13 +147,13 @@ public class ApiController {
         this.elasticHelper.moreLikeThisBulk(this.indexName, documents);
     List<Map<Categories, Double>> gazetteerResponses =
         this.gazetteerClassifier.classifyByGazetteers(documents);
-    List<Map<String, Map<String, Double>>> response =
+    List<List<Map<String, Object>>> response =
         calcResponse(documents, elasticResponses, gazetteerResponses);
     LOGGER.info(String.format("Response: %s", response));
     return response;
   }
 
-  private List<Map<String, Map<String, Double>>> calcResponse(
+  private List<List<Map<String, Object>>> calcResponse(
       List<String> documents,
       List<Map<Categories, Double>> elasticResponses,
       List<Map<Categories, Double>> gazetteerResponses) {
@@ -170,17 +170,16 @@ public class ApiController {
                           Map.Entry::getKey, Map.Entry::getValue, probabilityCombiner()));
             })
         .map(
-            map -> {
-              MapBuilder<String, Map<String, Double>> builder = MapBuilder.newMapBuilder();
-              map.forEach(
-                  (key, value) ->
-                      builder.put(
-                          key.getText(),
-                          MapBuilder.<String, Double>newMapBuilder()
-                              .put("match_prob", value)
-                              .map()));
-              return builder.map();
-            })
+            map ->
+                map.entrySet().stream()
+                    .map(
+                        entry -> {
+                          Map<String, Object> smallMap = new HashMap<>();
+                          smallMap.put("topic", entry.getKey().getText());
+                          smallMap.put("match_prob", entry.getValue());
+                          return smallMap;
+                        })
+                    .collect(Collectors.toList()))
         .collect(Collectors.toList());
   }
 
