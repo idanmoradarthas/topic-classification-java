@@ -21,12 +21,12 @@
         <dependency>
             <groupId>org.elasticsearch</groupId>
             <artifactId>elasticsearch</artifactId>
-            <version>7.1.0</version>
+            <version>[7.9.2,)</version>
         </dependency>
         <dependency>
             <groupId>org.elasticsearch.client</groupId>
             <artifactId>transport</artifactId>
-            <version>7.1.0</version>
+            <version>[7.9.2,)</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -35,7 +35,7 @@
         <dependency>
             <groupId>org.elasticsearch.client</groupId>
             <artifactId>elasticsearch-rest-high-level-client</artifactId>
-            <version>7.1.0</version>
+            <version>[7.9.2,)</version>
         </dependency>
         <!-- https://mvnrepository.com/artifact/org.apache.commons/commons-csv -->
         <dependency>
