@@ -2,7 +2,7 @@
 Classifying if text is related to weapons or not.
 
 ## Install and run project
-build using ```Java 1.8``` with ```Spring-Boot 2.1.6.RELEASE```, ```Docker Compose 3``` and ```ElasticSearch 7.1.1```.
+build using ```Java 1.8``` with ```Spring-Boot 2.1.6.RELEASE```, ```Docker Compose 3``` and ```ElasticSearch >= 7.9.2```.
 
 ```
 git clone https://github.com/idanmoradarthas/topic-classification-java.git
